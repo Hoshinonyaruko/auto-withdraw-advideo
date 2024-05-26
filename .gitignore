@@ -1,0 +1,7 @@
+# botgo specific
+config.yml
+*.db
+*.db.lock
+*.ini
+*.bat
+*.exe
