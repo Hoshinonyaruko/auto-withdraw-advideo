@@ -1,13 +1,10 @@
 package server
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -16,6 +13,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/config"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/structs"
+	"github.com/hoshinonyaruko/auto-withdraw-advideo/superini"
 )
 
 type WebSocketServerClient struct {
@@ -133,7 +131,7 @@ func wsHandler(c *gin.Context, config *config.Config) {
 }
 
 // 处理收到的信息
-func processWSMessage(msg []byte, config *config.Config) {
+func processWSMessage(msg []byte, conf *config.Config) {
 	var genericMap map[string]interface{}
 	if err := json.Unmarshal(msg, &genericMap); err != nil {
 		log.Printf("Error unmarshalling message to map: %v, Original message: %s\n", err, string(msg))
@@ -147,38 +145,53 @@ func processWSMessage(msg []byte, config *config.Config) {
 			return
 		}
 
-		//fmt.Printf("Processed a message event from group %d.\n", messageEvent.GroupID)
-
-		// 提取视频URL
-		re := regexp.MustCompile(`\[CQ:video,file=.+?,url=(.+?)\]`)
-		matches := re.FindStringSubmatch(messageEvent.RawMessage)
-		if len(matches) < 2 {
-			//log.Println("No video URL found in the message.")
-			return
-		}
-		videoURL := strings.Replace(matches[1], "\\u0026amp;", "&", -1)
-		videoURL = strings.Replace(videoURL, "&amp;", "&", -1)
-		fmt.Printf("提取到视频链接:%v\n", videoURL)
-		encodedURL := url.QueryEscape(videoURL)
-
-		// 拼接内部API请求
-		port := config.Settings.Port
+		rawMessage := messageEvent.RawMessage
+		groupID := fmt.Sprint(messageEvent.GroupID)
 		selfID := fmt.Sprint(messageEvent.SelfID)
-		messageID := fmt.Sprint(messageEvent.MessageID)
-		apiURL := fmt.Sprintf("http://127.0.0.1:%s/videoDuration?videourl=%s&self_id=%s&message_id=%s", port, encodedURL, selfID, messageID)
+		userID := fmt.Sprint(messageEvent.UserID)
 
-		// 发起请求
-		resp, err := http.Get(apiURL)
-		if err != nil {
-			log.Printf("Failed to invoke internal API: %v\n", err)
-			return
+		//fmt.Printf("测试:%v\n", rawMessage)
+
+		handleConfigToggle := func(currentStatus string, enableMessage, disableMessage string, section string) {
+			newStatus := "true"
+			if currentStatus == "true" {
+				newStatus = "false"
+			}
+			superini.WriteConfig(groupID, section, newStatus)
+			message := disableMessage
+			if newStatus == "true" {
+				message = enableMessage
+			}
+			SendGroupMessageViaWebSocket(selfID, groupID, userID, message)
 		}
-		defer resp.Body.Close()
-		var buf bytes.Buffer
-		buf.ReadFrom(resp.Body)
-		fmt.Println("Internal API response:", buf.String())
-	} else {
-		//log.Printf("Unknown message type or missing post type\n")
+
+		switch rawMessage {
+		case config.GetOnEnableVideoCheck():
+			currentStatus := superini.ReadConfig(groupID, "handleVideoMessage")
+			handleConfigToggle(currentStatus, "视频二维码检测已开启", "视频二维码检测已关闭", "handleVideoMessage")
+
+		case config.GetOnDisableVideoCheck():
+			currentStatus := superini.ReadConfig(groupID, "handleVideoMessage")
+			handleConfigToggle(currentStatus, "视频二维码检测已开启", "视频二维码检测已关闭", "handleVideoMessage")
+
+		case config.GetOnEnablePicCheck():
+			currentStatus := superini.ReadConfig(groupID, "handleImageMessage")
+			handleConfigToggle(currentStatus, "图片二维码检测已开启", "图片二维码检测已关闭", "handleImageMessage")
+
+		case config.GetOnDisablePicCheck():
+			currentStatus := superini.ReadConfig(groupID, "handleImageMessage")
+			handleConfigToggle(currentStatus, "图片二维码检测已开启", "图片二维码检测已关闭", "handleImageMessage")
+
+		default:
+			videoCheckEnabled := superini.ReadConfig(groupID, "handleVideoMessage")
+			imageCheckEnabled := superini.ReadConfig(groupID, "handleImageMessage")
+
+			if strings.Contains(rawMessage, "[CQ:video") && videoCheckEnabled == "true" {
+				handleVideoMessage(conf, rawMessage, messageEvent)
+			} else if strings.Contains(rawMessage, "[CQ:image") && imageCheckEnabled == "true" {
+				handleImageMessage(conf, rawMessage, messageEvent)
+			}
+		}
 	}
 }
 

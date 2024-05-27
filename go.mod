@@ -5,8 +5,10 @@ go 1.21.1
 require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/gin-gonic/gin v1.10.0
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/makiuchi-d/gozxing v0.1.1
+	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
