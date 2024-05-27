@@ -168,6 +168,9 @@ func ContainsQRCode(framePath string) bool {
 		if tryDecodeQRCode(croppedImg) {
 			return true
 		}
+		if detectQRCodePresence(croppedImg) {
+			return true
+		}
 	}
 
 	return false
@@ -207,6 +210,27 @@ func tryDecodeQRCode(img image.Image) bool {
 		return false
 	}
 
+	return true
+}
+
+// detectQRCodePresence tries to detect a QR Code in the given image.
+func detectQRCodePresence(img image.Image) bool {
+	source := gozxing.NewLuminanceSourceFromImage(img)
+	var zz gozxing.GlobalHistogramBinarizer
+	binarizer := zz.CreateBinarizer(source)
+	bmp, err := gozxing.NewBinaryBitmap(binarizer)
+	if err != nil {
+		log.Printf("Failed to create binary bitmap: %v", err)
+		return false
+	}
+
+	qrReader := qrcode.NewQRCodeReader()
+	result, err := qrReader.Decode(bmp, nil)
+	if err != nil {
+		log.Printf("Failed to detect QR code: %v", err)
+		return false
+	}
+	log.Printf("QR Code detectQRCodePresence: %s", result.GetText())
 	return true
 }
 

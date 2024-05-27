@@ -2,23 +2,19 @@ package main
 
 import (
 	"bufio"
-	"crypto/tls"
-	"encoding/binary"
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/config"
-	"github.com/hoshinonyaruko/auto-withdraw-advideo/logger"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/server"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/template"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/utils"
+	"github.com/hoshinonyaruko/auto-withdraw-advideo/webapi"
 )
 
 func main() {
@@ -41,9 +37,10 @@ func main() {
 		utils.FetchAndStoreUserIDs()
 	}
 	router := gin.Default()
-	router.GET("/videoDuration", getVideoPlaylist)
-	//正向ws
+	router.GET("/videoDuration", webapi.GetVideoPlaylist)
+	router.GET("/picheck", webapi.GetImageAndCheckQRCode)
 
+	//正向ws
 	wspath := conf.Settings.WsPath
 	if wspath == "nil" {
 		router.GET("", server.WsHandlerWithDependencies(conf))
@@ -69,7 +66,10 @@ func main() {
 	}()
 
 	// 调试用
-	//bool := utils.ContainsQRCode("C:\\Users\\Cosmo\\Pictures\\米哈游.png")
+	//bool := utils.ContainsQRCode("C:\\Users\\Cosmo\\Pictures\\haibao.png")
+	//bool := utils.ContainsQRCode("C:\\Users\\Cosmo\\Pictures\\frame_0002.jpg")
+	//bool := utils.ContainsQRCode("C:\\Users\\Cosmo\\Pictures\\智能体背景1.jpg")
+	//bool := utils.ContainsQRCode("C:\\Users\\Cosmo\\Pictures\\支付宝.JPG")
 
 	//fmt.Printf("%v", bool)
 
@@ -83,167 +83,6 @@ func main() {
 	// 正常退出程序
 	os.Exit(0)
 
-}
-
-func getVideoPlaylist(c *gin.Context) {
-	videoURL := c.Query("videourl")
-	selfID := c.Query("self_id")
-	messageID := c.Query("message_id")
-
-	if videoURL == "" || selfID == "" || messageID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "videourl, self_id, and message_id parameters are required"})
-		return
-	}
-
-	decodedURL, err := url.QueryUnescape(videoURL)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid video URL"})
-		return
-	}
-
-	duration, err := fetchVideoDuration(decodedURL)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	fmt.Printf("检测到视频,长度 %f\n", duration)
-
-	videoSecondLimit := config.GetVideoSecondLimit()
-	if duration < float64(videoSecondLimit) {
-		fmt.Printf("Video duration %f is less than limit %d, deleting message_id %s for self_id %s\n", duration, videoSecondLimit, messageID, selfID)
-		// 记录日志
-		logger.LogEvent(fmt.Sprintf("Video duration %f is less than limit %d, deleting message_id %s for self_id %s", duration, videoSecondLimit, messageID, selfID))
-		videopath := logger.DownloadVideo(decodedURL, selfID)
-
-		if config.GetCheckVideoQRCode() {
-			// 检查视频是否包含二维码
-			if !utils.CheckVideoForQRCode(videopath) {
-				fmt.Printf("video not contain QRcode pass.\n")
-				c.JSON(http.StatusOK, gin.H{
-					"duration": duration,
-				})
-				return
-			} else {
-				fmt.Printf("video contain QRcode!!.\n")
-			}
-		}
-
-		urlToken, exists := utils.GetBaseURLByUserID(selfID)
-		if !exists {
-			// 走反向ws请求
-			message := map[string]interface{}{
-				"action": "delete_msg",
-				"params": map[string]string{
-					"message_id": messageID,
-				},
-			}
-
-			if err := server.SendMessageBySelfID(selfID, message); err != nil {
-				log.Printf("Failed to send delete message via websocket: %v\n", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send delete command via websocket"})
-				return
-			}
-
-		} else {
-			deleteURL := fmt.Sprintf("%s/delete_msg?message_id=%s", urlToken.BaseURL, messageID)
-			if urlToken.AccessToken != "" {
-				deleteURL += fmt.Sprintf("&access_token=%s", urlToken.AccessToken)
-			}
-
-			resp, err := http.Get(deleteURL)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to delete message: %v", err)})
-				return
-			}
-			defer resp.Body.Close()
-		}
-
-		// 可以根据需要输出更多响应细节
-		c.JSON(http.StatusOK, gin.H{"message": "Message deleted successfully"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"duration": duration,
-	})
-}
-
-func fetchVideoDuration(videoURL string) (float64, error) {
-	// 创建自定义的HTTP客户端，忽略证书验证
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   10 * time.Second, // 设置超时
-	}
-
-	// 使用自定义的客户端发起请求
-	resp, err := client.Get(videoURL)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get video: %v", err)
-	}
-	defer resp.Body.Close()
-
-	buffer := make([]byte, 1024*1024*4) // 4MB buffer to find mvhd
-	totalRead := 0
-	for {
-		n, err := resp.Body.Read(buffer[totalRead:])
-		if err != nil {
-			break
-		}
-		totalRead += n
-		if totalRead >= len(buffer) {
-			break
-		}
-	}
-
-	mvhdIndex := findMvhd(buffer[:totalRead])
-	if mvhdIndex == -1 {
-		return 0, fmt.Errorf("mvhd box not found in the first %d bytes of the video", totalRead)
-	}
-
-	return parseDuration(buffer[mvhdIndex:])
-}
-
-func findMvhd(data []byte) int {
-	const sizeOfLengthAndType = 8 // Length (4 bytes) + Type (4 bytes)
-	index := 0
-
-	for index+sizeOfLengthAndType <= len(data) {
-		size := int(binary.BigEndian.Uint32(data[index : index+4]))
-		boxType := string(data[index+4 : index+8])
-		if boxType == "moov" {
-			// Look for mvhd within moov
-			endIndex := index + size
-			index += sizeOfLengthAndType
-			for index+sizeOfLengthAndType <= endIndex {
-				subSize := int(binary.BigEndian.Uint32(data[index : index+4]))
-				subBoxType := string(data[index+4 : index+8])
-				if subBoxType == "mvhd" {
-					return index
-				}
-				index += subSize
-			}
-		}
-		index += size
-	}
-	return -1
-}
-
-func parseDuration(data []byte) (float64, error) {
-	if len(data) < 24 {
-		return 0, fmt.Errorf("insufficient data for duration calculation")
-	}
-	timeScale := binary.BigEndian.Uint32(data[20:24])
-	duration := binary.BigEndian.Uint32(data[24:28])
-
-	if timeScale == 0 {
-		return 0, fmt.Errorf("invalid time scale value")
-	}
-
-	return float64(duration) / float64(timeScale), nil
 }
 
 func handleMissingConfigFile(configFilePath string) {
