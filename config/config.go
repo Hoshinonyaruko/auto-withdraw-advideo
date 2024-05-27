@@ -78,3 +78,23 @@ func GetHttpPathsAccessTokens() []structs.AccessToken {
 	}
 	return nil
 }
+
+// 获取CheckVideoQRCode
+func GetCheckVideoQRCode() bool {
+	mu.Lock()
+	defer mu.Unlock()
+	if instance != nil {
+		return instance.Settings.CheckVideoQRCode
+	}
+	return false
+}
+
+// 获取QRLimit
+func GetQRLimit() int {
+	mu.Lock()
+	defer mu.Unlock()
+	if instance != nil {
+		return instance.Settings.QRLimit
+	}
+	return 1
+}

@@ -3,8 +3,10 @@ module github.com/hoshinonyaruko/auto-withdraw-advideo
 go 1.21.1
 
 require (
+	github.com/disintegration/imaging v1.6.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/gorilla/websocket v1.5.1
+	github.com/makiuchi-d/gozxing v0.1.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -30,8 +32,10 @@ require (
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	golang.org/x/arch v0.8.0 // indirect
 	golang.org/x/crypto v0.23.0 // indirect
+	golang.org/x/image v0.16.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
+	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
 )
