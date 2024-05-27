@@ -98,3 +98,53 @@ func GetQRLimit() int {
 	}
 	return 1
 }
+
+// 获取WithdrawNotice
+func GetWithdrawNotice() string {
+	mu.Lock()
+	defer mu.Unlock()
+	if instance != nil {
+		return instance.Settings.WithdrawNotice
+	}
+	return ""
+}
+
+// 获取启用视频检查的配置
+func GetOnEnableVideoCheck() string {
+	mu.Lock()
+	defer mu.Unlock()
+	if instance != nil {
+		return instance.Settings.OnEnableVideoCheck
+	}
+	return ""
+}
+
+// 获取禁用视频检查的配置
+func GetOnDisableVideoCheck() string {
+	mu.Lock()
+	defer mu.Unlock()
+	if instance != nil {
+		return instance.Settings.OnDisableVideoCheck
+	}
+	return ""
+}
+
+// 获取启用图片检查的配置
+func GetOnEnablePicCheck() string {
+	mu.Lock()
+	defer mu.Unlock()
+	if instance != nil {
+		return instance.Settings.OnEnablePicCheck
+	}
+	return ""
+}
+
+// 获取禁用图片检查的配置
+func GetOnDisablePicCheck() string {
+	mu.Lock()
+	defer mu.Unlock()
+	if instance != nil {
+		return instance.Settings.OnDisablePicCheck
+	}
+	return ""
+}

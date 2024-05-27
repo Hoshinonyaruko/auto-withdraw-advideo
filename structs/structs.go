@@ -14,6 +14,11 @@ type Settings struct {
 	VideoSecondLimit      int           `yaml:"video_second_limit"`
 	CheckVideoQRCode      bool          `yaml:"check_video_qrcode"`
 	QRLimit               int           `yaml:"qr_limit"`
+	WithdrawNotice        string        `yaml:"withdraw_notice"`
+	OnEnableVideoCheck    string        `yaml:"on_enable_video_check"`
+	OnDisableVideoCheck   string        `yaml:"on_disable_video_check"`
+	OnEnablePicCheck      string        `yaml:"on_enable_pic_check"`
+	OnDisablePicCheck     string        `yaml:"on_disable_pic_check"`
 }
 
 // Message represents a standardized structure for the incoming messages.
