@@ -68,6 +68,11 @@ func main() {
 		}
 	}()
 
+	// 调试用
+	//bool := utils.ContainsQRCode("C:\\Users\\Cosmo\\Pictures\\米哈游.png")
+
+	//fmt.Printf("%v", bool)
+
 	// 设置信号捕获
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -109,7 +114,20 @@ func getVideoPlaylist(c *gin.Context) {
 		fmt.Printf("Video duration %f is less than limit %d, deleting message_id %s for self_id %s\n", duration, videoSecondLimit, messageID, selfID)
 		// 记录日志
 		logger.LogEvent(fmt.Sprintf("Video duration %f is less than limit %d, deleting message_id %s for self_id %s", duration, videoSecondLimit, messageID, selfID))
-		logger.DownloadVideo(decodedURL, selfID)
+		videopath := logger.DownloadVideo(decodedURL, selfID)
+
+		if config.GetCheckVideoQRCode() {
+			// 检查视频是否包含二维码
+			if !utils.CheckVideoForQRCode(videopath) {
+				fmt.Printf("video not contain QRcode pass.\n")
+				c.JSON(http.StatusOK, gin.H{
+					"duration": duration,
+				})
+				return
+			} else {
+				fmt.Printf("video contain QRcode!!.\n")
+			}
+		}
 
 		urlToken, exists := utils.GetBaseURLByUserID(selfID)
 		if !exists {
