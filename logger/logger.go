@@ -40,7 +40,7 @@ func LogEvent(message string) {
 }
 
 // DownloadVideo downloads the video from the specified URL and ignores SSL certificate errors
-func DownloadVideo(url, selfID string) {
+func DownloadVideo(url, selfID string) string {
 	// Create a custom HTTP client that ignores certificate errors
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -53,7 +53,7 @@ func DownloadVideo(url, selfID string) {
 	resp, err := client.Get(url)
 	if err != nil {
 		LogEvent(fmt.Sprintf("Failed to download video for selfID %s: %v", selfID, err))
-		return
+		return ""
 	}
 	defer resp.Body.Close()
 
@@ -62,14 +62,15 @@ func DownloadVideo(url, selfID string) {
 	file, err := os.Create(filePath)
 	if err != nil {
 		LogEvent(fmt.Sprintf("Failed to create file for video URL %s: %v", url, err))
-		return
+		return ""
 	}
 	defer file.Close()
 
 	if _, err := io.Copy(file, resp.Body); err != nil {
 		LogEvent(fmt.Sprintf("Failed to save video for URL %s: %v", url, err))
-		return
+		return ""
 	}
 
 	LogEvent(fmt.Sprintf("Video downloaded successfully for URL %s, saved to %s", url, filePath))
+	return filePath
 }

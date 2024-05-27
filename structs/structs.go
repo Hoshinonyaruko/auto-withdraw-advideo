@@ -12,6 +12,8 @@ type Settings struct {
 	HttpPaths             []string      `yaml:"paths"`
 	HttpPathsAccessTokens []AccessToken `yaml:"access_tokens"`
 	VideoSecondLimit      int           `yaml:"video_second_limit"`
+	CheckVideoQRCode      bool          `yaml:"check_video_qrcode"`
+	QRLimit               int           `yaml:"qr_limit"`
 }
 
 // Message represents a standardized structure for the incoming messages.
