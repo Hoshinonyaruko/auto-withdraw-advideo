@@ -213,6 +213,13 @@ func tryDecodeQRCode(img image.Image) bool {
 	return true
 }
 
+// 检测错误信息中是否含有可能表示二维码存在的信息
+func matchQRCodeErrorInfo(errorMessage string) bool {
+	// 匹配可能表示二维码部分成功识别的错误消息
+	var re = regexp.MustCompile(`FormatException|ChecksumException|ReedSolomonException`)
+	return re.MatchString(errorMessage)
+}
+
 // detectQRCodePresence tries to detect a QR Code in the given image.
 func detectQRCodePresence(img image.Image) bool {
 	source := gozxing.NewLuminanceSourceFromImage(img)
@@ -225,12 +232,18 @@ func detectQRCodePresence(img image.Image) bool {
 	}
 
 	qrReader := qrcode.NewQRCodeReader()
-	result, err := qrReader.Decode(bmp, nil)
+	_, err = qrReader.Decode(bmp, nil)
 	if err != nil {
 		log.Printf("Failed to detect QR code: %v", err)
+		// 检查错误信息是否包含可能表明二维码存在的信息
+		if matchQRCodeErrorInfo(err.Error()) {
+			log.Printf("Potential QR Code features detected despite the error: %v", err)
+			return true
+		}
 		return false
 	}
-	log.Printf("QR Code detectQRCodePresence: %s", result.GetText())
+
+	log.Printf("QR Code successfully detected.")
 	return true
 }
 
