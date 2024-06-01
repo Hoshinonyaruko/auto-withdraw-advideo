@@ -105,7 +105,7 @@ func SendGroupMessageViaWebSocket(selfID, groupID, userID, message string) error
 		"params": map[string]interface{}{
 			"group_id": groupID,
 			"user_id":  userID,
-			"message":  message,
+			"message":  "[CQ:at,qq=" + userID + "]" + message, //at触发者
 		},
 	}
 
