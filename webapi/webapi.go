@@ -56,12 +56,16 @@ func GetVideoPlaylist(c *gin.Context) {
 			// 检查视频是否包含二维码
 			if !utils.CheckVideoForQRCode(videopath) {
 				fmt.Printf("video not contain QRcode pass.\n")
+				logger.LogEvent(fmt.Sprintf("video not contain QRcode pass url:%s", decodedURL))
 				c.JSON(http.StatusOK, gin.H{
 					"duration": duration,
 				})
+				// 返回 不做处理
 				return
 			} else {
-				fmt.Printf("video contain QRcode!!.\n")
+				fmt.Printf("video contain QRcode!!\n")
+				logger.LogEvent(fmt.Sprintf("video contain QRcode!! url:%s", decodedURL))
+				// 撤回 & 提示
 			}
 		}
 
