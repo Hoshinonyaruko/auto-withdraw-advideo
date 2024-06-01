@@ -75,7 +75,7 @@ func SendGroupMsgHttp(urlToken struct {
 	payload := map[string]interface{}{
 		"group_id": groupID,
 		"user_id":  userID,
-		"message":  message,
+		"message":  "[CQ:at,qq=" + userID + "]" + message, //at触发者
 	}
 
 	requestBody, err := json.Marshal(payload)
