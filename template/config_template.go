@@ -14,7 +14,7 @@ settings:
   qr_limit : 1                                  #逐帧检查视频,包含1帧二维码就撤回.
   withdraw_notice : "撤回了一条广告."                          #撤回广告时的回复.
   on_enable_video_check : "视频广告撤回on"       #视频二维码广告撤回开启指令(默认关闭)需手动发指令开启
-  on_disable_video_check : 视频广告撤回off""     #视频二维码广告撤回关闭指令
+  on_disable_video_check : "视频广告撤回off"     #视频二维码广告撤回关闭指令
   on_enable_pic_check : "图片广告撤回on"         #图片二维码广告撤回开启指令(默认关闭)需手动发指令开启
   on_disable_pic_check : "图片广告撤回off"       #图片二维码广告撤回关闭指令
   access_tokens:
