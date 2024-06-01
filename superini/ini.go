@@ -81,7 +81,20 @@ func ReadConfig(section, key string) string {
 	if instance.data == nil {
 		return ""
 	}
-	return instance.data.Section(section).Key(key).String()
+
+	// 检查节是否存在
+	if !instance.data.HasSection(section) {
+		return "" // 如果节不存在，返回空字符串
+	}
+
+	// 检查键是否存在于该节中
+	s := instance.data.Section(section)
+	if !s.HasKey(key) {
+		return "" // 如果键不存在，返回空字符串
+	}
+
+	// 安全返回键的值
+	return s.Key(key).String()
 }
 
 // WriteConfig writes a value to the configuration.

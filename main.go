@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/config"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/server"
+	"github.com/hoshinonyaruko/auto-withdraw-advideo/superini"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/template"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/utils"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/webapi"
@@ -27,6 +28,7 @@ func main() {
 	}
 
 	// 加载配置
+	superini.GetInstance()
 	conf, err := config.LoadConfig(configFilePath)
 	if err != nil {
 		log.Fatalf("error: %v", err)
