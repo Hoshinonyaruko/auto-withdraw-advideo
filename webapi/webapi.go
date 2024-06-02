@@ -66,6 +66,7 @@ func GetVideoPlaylist(c *gin.Context) {
 				fmt.Printf("video contain QRcode!!\n")
 				logger.LogEvent(fmt.Sprintf("video contain QRcode!! url:%s", decodedURL))
 				// 撤回 & 提示
+				logger.LogEvent(fmt.Sprintf("bot [%s] ad from group_id:%s user_id:%s", selfID, GroupID, userID))
 			}
 		}
 
