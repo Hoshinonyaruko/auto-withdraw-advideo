@@ -148,3 +148,23 @@ func GetOnDisablePicCheck() string {
 	}
 	return ""
 }
+
+// GetSetGroupKick 获取 SetGroupKick 配置值
+func GetSetGroupKick() bool {
+	mu.Lock()
+	defer mu.Unlock()
+	if instance != nil {
+		return instance.Settings.SetGroupKick
+	}
+	return false
+}
+
+// GetKickAndRejectAddRequest 获取 KickAndRejectAddRequest 配置值
+func GetKickAndRejectAddRequest() bool {
+	mu.Lock()
+	defer mu.Unlock()
+	if instance != nil {
+		return instance.Settings.KickAndRejectAddRequest
+	}
+	return false
+}

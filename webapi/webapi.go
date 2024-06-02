@@ -75,6 +75,10 @@ func GetVideoPlaylist(c *gin.Context) {
 			server.SendDeleteMessageViaWebSocket(selfID, messageID)
 			// 发提示
 			server.SendGroupMessageViaWebSocket(selfID, GroupID, userID, config.GetWithdrawNotice())
+			if config.GetSetGroupKick() {
+				// 移除群员
+				server.KickGroupMemberViaWebSocket(selfID, GroupID, userID)
+			}
 		} else {
 			server.SendDeleteRequest(urlToken, messageID)
 			// 发提示
