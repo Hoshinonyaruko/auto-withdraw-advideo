@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+
+	"github.com/hoshinonyaruko/auto-withdraw-advideo/config"
 )
 
 // sendDeleteMessageViaWebSocket sends a delete message via WebSocket for the given selfID and messageID.
@@ -111,6 +113,27 @@ func SendGroupMessageViaWebSocket(selfID, groupID, userID, message string) error
 
 	if err := SendMessageBySelfID(selfID, wsMessage); err != nil {
 		log.Printf("Failed to send group message via websocket: %v\n", err)
+		return err
+	}
+
+	return nil
+}
+
+// KickGroupMemberViaWebSocket kicks a group member and optionally rejects their re-add requests based on config.
+func KickGroupMemberViaWebSocket(selfID, groupID, userID string) error {
+	rejectAddRequest := config.GetKickAndRejectAddRequest() // 获取是否拒绝加群请求的配置
+
+	wsMessage := map[string]interface{}{
+		"action": "set_group_kick",
+		"params": map[string]interface{}{
+			"group_id":           groupID,
+			"user_id":            userID,
+			"reject_add_request": rejectAddRequest, // 根据配置决定是否拒绝此人的加群请求
+		},
+	}
+
+	if err := SendMessageBySelfID(selfID, wsMessage); err != nil {
+		log.Printf("Failed to kick group member via websocket: %v\n", err)
 		return err
 	}
 
