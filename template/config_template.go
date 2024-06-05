@@ -19,6 +19,7 @@ settings:
   on_disable_video_check : "视频广告撤回off"     #视频二维码广告撤回关闭指令
   on_enable_pic_check : "图片广告撤回on"         #图片二维码广告撤回开启指令(默认关闭)需手动发指令开启
   on_disable_pic_check : "图片广告撤回off"       #图片二维码广告撤回关闭指令
+  withdraw_words : [""]                         #该配置无开关,请将你最讨厌的广告关键词放进去,比如"免费收徒\抖音引流\保证一天",检测到就会自动撤回
   access_tokens:
   - self_id: ""
     token: ""
