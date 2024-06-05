@@ -59,6 +59,16 @@ func GetHttpPaths() []string {
 	return nil
 }
 
+// 获取WithdrawWords
+func GetWithdrawWords() []string {
+	mu.Lock()
+	defer mu.Unlock()
+	if instance != nil {
+		return instance.Settings.WithdrawWords
+	}
+	return nil
+}
+
 // 获取VideoSecondLimit
 func GetVideoSecondLimit() int {
 	mu.Lock()

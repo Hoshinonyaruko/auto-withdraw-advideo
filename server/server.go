@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/config"
+	"github.com/hoshinonyaruko/auto-withdraw-advideo/logger"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/structs"
 	"github.com/hoshinonyaruko/auto-withdraw-advideo/superini"
 )
@@ -149,8 +150,31 @@ func processWSMessage(msg []byte, conf *config.Config) {
 		groupID := fmt.Sprint(messageEvent.GroupID)
 		selfID := fmt.Sprint(messageEvent.SelfID)
 		userID := fmt.Sprint(messageEvent.UserID)
+		messageID := fmt.Sprint(messageEvent.MessageID)
 
-		//fmt.Printf("测试:%v\n", rawMessage)
+		// 获取需要撤回的关键词列表
+		withdrawWords := config.GetWithdrawWords()
+
+		// 检查rawMessage是否包含任何撤回关键词
+		for _, word := range withdrawWords {
+			if strings.Contains(rawMessage, word) {
+				// 如果找到匹配的词，则发送删除消息请求
+				SendDeleteMessageViaWebSocket(selfID, messageID)
+				// 撤回 & 提示
+				logger.LogEvent(fmt.Sprintf("bot [%s] withdraw from group_id:%s user_id:%s messgae[%s]", selfID, groupID, userID, rawMessage))
+				// 发送提示消息
+				withdrawNotice := config.GetWithdrawNotice()
+				SendGroupMessageViaWebSocket(selfID, groupID, userID, withdrawNotice)
+
+				// 如果设置了踢出群成员
+				if config.GetSetGroupKick() {
+					KickGroupMemberViaWebSocket(selfID, groupID, userID)
+				}
+
+				// 处理完毕后退出循环
+				break
+			}
+		}
 
 		handleConfigToggle := func(currentStatus string, enableMessage, disableMessage string, section string) {
 			newStatus := "true"
