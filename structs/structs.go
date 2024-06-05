@@ -21,6 +21,7 @@ type Settings struct {
 	OnDisablePicCheck       string        `yaml:"on_disable_pic_check"`
 	SetGroupKick            bool          `yaml:"set_group_kick"`
 	KickAndRejectAddRequest bool          `yaml:"kick_and_reject_add_request"`
+	WithdrawWords           []string      `yaml:"withdraw_words"`
 }
 
 // Message represents a standardized structure for the incoming messages.
